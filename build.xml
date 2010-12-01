@@ -1,0 +1,92 @@
+<project default="install" basedir=".">
+
+	<property name="warfile.dir" value="build" />
+	<property name="war.dir" value="war" />
+	<property name="classes.dir" value="${war.dir}/WEB-INF/classes" />
+	<property name="lib.dir" value="${war.dir}/WEB-INF/lib" />
+	<property name="src.dir" value="src" />
+	<property name="project.name" value="rdserver" />
+	<property name="catalina.home" value="/opt/local/share/java/tomcat6/lib/" />
+
+	<property name="manager.url"   value="http://localhost:8080/manager"/>
+	<property name="manager.username"   value="admin"/>
+	<property name="manager.password"   value="r4nd0m"/>	
+
+	<!-- Configure the custom Ant tasks for the Manager application -->
+  	<taskdef name="deploy"    classname="org.apache.catalina.ant.DeployTask"/>
+  	<taskdef name="reload"    classname="org.apache.catalina.ant.ReloadTask"/>
+  	<taskdef name="undeploy"  classname="org.apache.catalina.ant.UndeployTask"/>
+	
+
+	<path id="classpath">
+  		<fileset dir="${lib.dir}">
+    		<include name="*.jar"/>
+  		</fileset>
+		<fileset dir="${catalina.home}">
+			<include name="*.jar"/>
+		</fileset>
+	</path>
+	
+	<target name="makedirs">
+		<mkdir dir="${warfile.dir}" />
+		<mkdir dir="${classes.dir}" />
+	</target>
+
+	<target name="compile" depends="makedirs"
+			description="Compile classes into web archive dir">
+		<javac destdir="${classes.dir}" debug="on" deprecation="on" 
+			   includeAntRuntime="no">
+			<src path="${src.dir}" />
+			<classpath refid="classpath"/>
+		</javac>
+	</target>	
+
+	<target name="war" depends="compile"
+			description="Create the web archive file">
+		<jar jarfile="${warfile.dir}/${project.name}.war" 
+			 basedir="${war.dir}">
+			<include name="**/*" />
+			<!--manifest>
+				<attribute name="Main-Class" value="${entrypoint}" />
+			</manifest-->
+		</jar>
+	</target>
+
+  	<target name="install" depends="compile,war"
+   			description="Install application to servlet container">
+		<deploy url="${manager.url}" username="${manager.username}"
+       			password="${manager.password}" path="/${project.name}"
+       			war="file:${basedir}/${warfile.dir}/${project.name}.war" />
+  	</target>
+
+	<target name="uninstall"
+   			description="Remove application on servlet container">
+	    <undeploy url="${manager.url}" username="${manager.username}"
+		          password="${manager.password}" path="/${project.name}"/>
+  	</target>
+
+
+ 	<target name="reload" depends="compile,war"
+   			description="Reload application on servlet container">
+
+    	<reload url="${manager.url}" username="${manager.username}"
+       			password="${manager.password}" path="/${project.name}"/>
+  	</target>
+
+	<target name="clean" description="Clean compiled classes">
+		<delete includeemptydirs="true">
+    		<fileset dir="${classes.dir}" includes="**/*" />
+		</delete>
+	</target>
+
+	<target name="clean-dist" description="Clean web archive file">
+		<delete file="${warfile.dir}" />
+	</target>
+
+	<target name="clean-all" description="Clean everything" 
+			depends="clean,clean-dist" />
+
+	<target name="reinstall" description="Uninstalls and reinstalls project"
+		    depends="uninstall,install" />
+
+</project>
