@@ -43,6 +43,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.servlet.ModelAndView;
+
 
 import org.postgis.*;
 
@@ -53,28 +55,81 @@ public class Main
     private static final Logger log = 
 		Logger.getLogger(Main.class.getName());
 
-	private static final CompressionType compressionType = CompressionType.NONE;
-
-
-  /**
-     * GET requests return empty page.
-     */
-    @RequestMapping(value = "/server/*", method = RequestMethod.GET)
-	@ResponseStatus(HttpStatus.CREATED)
-    public void getResponse() 
+    
+	@RequestMapping(value = "/main", method = RequestMethod.GET)
+    public String mainPageGET() 
 	{
+		log.info("Main.mainPageGET()");
+		return "main";
     }
 
-    /**
-     * POST requests are used to receive archived log files. The file is 
-	 * received, uncompressed and parsed to retrieve the logging data that are 
-	 * eventually persisted on the database.
-     * @param req
-     * @return an empty response
-     */
-    @RequestMapping(value = "/server/*", method = RequestMethod.POST)
-    public String postResponse(HttpServletRequest req)
+
+    @RequestMapping(value = "/upload", method = RequestMethod.GET)
+	@ResponseStatus(HttpStatus.CREATED)
+    public void uploadGET()
+	{
+		log.info("Main.uploadGET()");
+    }
+
+
+    @RequestMapping(value = "/upload/single", method = RequestMethod.POST)
+    public ModelAndView singleUploadPOST(HttpServletRequest req)
+		throws ServletException
     {
+		log.info("Main.singleUploadPOST()");
+		      try
+        {
+        	// Look at all the submitted parts of the post data and process 
+			// files as necessary
+            ServletFileUpload upload = new ServletFileUpload();
+            FileItemIterator iterator = upload.getItemIterator(req);
+            while (iterator.hasNext())
+            {
+                FileItemStream item = iterator.next();
+                InputStream is = item.openStream();
+
+                // Form fields will be returned too, but Files are only 
+				// important
+                if (!item.isFormField())
+                {
+					// Single entry is never compressed, but put it through util
+					// anyway
+                    OutputStream os = new ByteArrayOutputStream();
+                    try
+                    {
+                    	CompressionUtils.uncompress(is, os, 
+													CompressionType.NONE);
+                    }
+                    catch (Exception ex)
+                    {
+                    	throw new ServletException(
+							"Single entry upload failure", ex);
+                    }
+
+					parseAndPersistEntries(os.toString());
+                }
+            }
+        }
+        catch (FileUploadException ex) 
+		{
+            log.warn(ex.toString());
+        }
+        catch (IOException ex) 
+		{
+            log.warn(ex.toString());
+        }
+        
+  		return new ModelAndView("message", 
+								"text", 
+								"Uploader processed single entry");
+	}
+
+
+    @RequestMapping(value = "/upload/bulk", method = RequestMethod.POST)
+    public ModelAndView bulkUploadPOST(HttpServletRequest req)
+    {
+		log.info("Main.bulkUploadPOST()");
+		int count = 0;
         try
         {
         	// Look at all the submitted parts of the post data and process 
@@ -122,7 +177,8 @@ public class Main
 							"Failed to uncompress file...", ex);
                     }
                     // parse and persist file entries
-                    parseAndPersistEntries(uncompressedStream.toString());
+                    count = 
+						parseAndPersistEntries(uncompressedStream.toString());
                 }
             }
         }
@@ -139,7 +195,10 @@ public class Main
             log.warn(ex.toString());
         }
         
-        return "empty";
+  		return new ModelAndView("message", 
+								"text", 
+								"Uploader processed " + count + " entries");
+
     }
 
 
@@ -180,14 +239,9 @@ public class Main
 
 	}*/
 
-   /**
-     * Parses a string and creates the entry objects using Jackson's full data 
-	 * binding. The entries are then persisted on the database. 
-     * @param contents
-     * @return
-     */
-    @SuppressWarnings("unchecked")
-    public static void parseAndPersistEntries(String contents) 
+    
+	@SuppressWarnings("unchecked")
+    public static int parseAndPersistEntries(String contents) 
 	{
         ObjectMapper mapper = new ObjectMapper();
         mapper.configure(
@@ -196,26 +250,23 @@ public class Main
 		PersistenceManager pm = PMF.get().getPersistenceManager();
         
 		Transaction tx = pm.currentTransaction();
-
+		
+		int count = -1;
         try 
 		{
-			BufferedInputStream stream = new BufferedInputStream(
-				new FileInputStream(contents));
-	    	OutputStream uncompressedStream = new ByteArrayOutputStream();
-            CompressionUtils.uncompress(stream, uncompressedStream, 
-										compressionType);
-
-			BufferedReader reader = new BufferedReader(
-				new StringReader(uncompressedStream.toString()));
+			BufferedReader reader = 
+				new BufferedReader(new StringReader(contents));
 
 	        String strLine;
-			log.info("Read file");
+			log.info("parseAndPersistEntries(): Reading log file");
             
+			count = 0;
             while ((strLine = reader.readLine()) != null) 
 			{
 				Map<String,Object> entry = mapper.readValue(strLine, Map.class);
 				tx.begin();
 				processEntry(entry, mapper, pm);
+				++count;
 				tx.commit();
 			}
 			
@@ -244,6 +295,7 @@ public class Main
             pm.close();
         }
 		
+		return count;
 	}
 
 
@@ -341,8 +393,20 @@ public class Main
 				
 	}
 
-	private static void cleanDatabase(PersistenceManager pm, Transaction tx)
+	@RequestMapping(value = "/cleandb", method = RequestMethod.GET)
+	@ResponseStatus(HttpStatus.CREATED)	
+	public void cleanDatabaseGET()
 	{
+		log.info("cleanDatabaseGET()");
+	}
+
+	@RequestMapping(value = "/cleandb", method = RequestMethod.POST)
+	public ModelAndView cleanDatabasePOST(HttpServletRequest req)
+	{
+		log.info("cleanDatabasePOST()");
+
+		PersistenceManager pm = PMF.get().getPersistenceManager();
+		Transaction tx = pm.currentTransaction();
 
 		tx.begin();
 		pm.newQuery(WifiEntry.class).deletePersistentAll();
@@ -381,6 +445,9 @@ public class Main
 		tx.commit();
 		log.info("Cleaned up db old entries");
 
+		return new ModelAndView("message", 
+								"text", 
+								"Cleaned up database of persistent objects");
 	}
 
 }

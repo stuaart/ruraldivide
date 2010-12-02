@@ -37,6 +37,7 @@
 		<javac destdir="${classes.dir}" debug="on" deprecation="on" 
 			   includeAntRuntime="no">
 			<src path="${src.dir}" />
+			<compilerarg value="-Xlint:unchecked" />
 			<classpath refid="classpath"/>
 		</javac>
 	</target>	
@@ -75,7 +76,9 @@
 
 	<target name="clean" description="Clean compiled classes">
 		<delete includeemptydirs="true">
-    		<fileset dir="${classes.dir}" includes="**/*" />
+    		<fileset dir="${classes.dir}" includes="**/*">
+				<exclude name="log4j.properties" />
+			</fileset>
 		</delete>
 	</target>
 

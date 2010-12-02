@@ -20,11 +20,15 @@
 			org.springframework.web.servlet.DispatcherServlet
 		</servlet-class>
     	<load-on-startup>1</load-on-startup>
+		<init-param>
+	      <param-name>trimSpaces</param-name>
+	      <param-value>true</param-value>
+	    </init-param>
   	</servlet>
 
   	<servlet-mapping>
     	<servlet-name>dispatcher</servlet-name>
-    	<url-pattern>/*</url-pattern>
+    	<url-pattern>/a/*</url-pattern>
 	</servlet-mapping>
 
 </web-app>

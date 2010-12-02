@@ -6,14 +6,15 @@
        http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
 
 	<!--  View resolver -->
-	<!--bean id="viewResolver"
-		  class="org.springframework.web.servlet.view.InternalResourceViewResolver">
-		<property name="viewClass" value="org.springframework.web.servlet.view.JstlView" />
+	<bean id="viewResolver"
+	 class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<property name="viewClass" 
+				  value="org.springframework.web.servlet.view.JstlView" />
 		<property name="prefix" value="/WEB-INF/jsp/" />
 		<property name="suffix" value=".jsp" />
-	</bean-->
+	</bean>
 
-	<bean name="server" class="horizon.ruraldivide.server.Main" />
+	<bean class="horizon.ruraldivide.server.Main" />
 
 </beans>
 

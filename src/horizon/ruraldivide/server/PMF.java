@@ -17,7 +17,7 @@ public final class PMF
 			generatePropertiesPostGIS("localhost:5432", "features_gis",
 									  "postgres", "r4nd0m")
 		);
-	private static final Properties propInstance = new Properties();
+	private static Properties propInstance;
 
     private PMF() {}
 
@@ -29,6 +29,7 @@ public final class PMF
 	public static Properties generatePropertiesPostGIS(String hostport, 
 									String dbname, String user, String pass)
 	{
+		propInstance = new Properties();
 		propInstance.setProperty("javax.jdo.PersistenceManagerFactoryClass",
 		    "org.datanucleus.jdo.JDOPersistenceManagerFactory");
 		propInstance.setProperty("javax.jdo.option.ConnectionDriverName",
