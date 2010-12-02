@@ -2,3 +2,7 @@ Horizon project: Bridging the Rural Divide
 
 This is the Rural Divide server, which provides the interface to a PostGIS 
 database. Views are then obtained on this data from Geoserver.
+
+Some of this code has been shamelessly stolen from Aether's Notebook!
+
+Stuart Reeves
