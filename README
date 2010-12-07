@@ -1,8 +1,69 @@
-Horizon project: Bridging the Rural Divide
+Licence
+===
+All code licensed under the AGPLv3, except 3rd party libraries which are 
+distributed under their individual licences.
 
+
+Bridging the Rural Divide (part of Horizon Digital Economy Research)
+===
 This is the Rural Divide server, which provides the interface to a PostGIS 
 database. Views are then obtained on this data from Geoserver.
 
 Some of this code has been shamelessly stolen from Aether's Notebook!
 
 Stuart Reeves
+
+
+---
+
+
+Some notes on installing PostGIS etc. on Mac that may be useful for someone, 
+somewhere...
+
+1) installed postgis, postgresql90 via macports
+
+2) Added /opt/local/lib/postgresql90/bin to PATH in ~/.bashrc
+
+3) Change password for user postgres
+
+$ psql template1
+
+ALTER USER postgres WITH PASSWORD <password>
+
+
+4) Starting postgresql: 
+	postgres -D /opt/local/var/db/postgresql90/defaultdb
+
+5) Create template db
+
+http://geospatial.nomad-labs.com/2006/12/24/postgis-template-database/
+
+# Creating the template spatial database
+$ createdb -E UTF8 -T template0 template_postgis
+
+$POSTGIS_SQL_PATH=/opt/local/share/postgresql90/contrib/postgis-1.5/
+
+# Loading the PostGIS SQL routines.
+$ psql -d template_postgis -f $POSTGIS_SQL_PATH/postgis.sql
+$ psql -d template_postgis -f $POSTGIS_SQL_PATH/spatial_ref_sys.sql
+
+# Enabling users to alter spatial tables.
+$ psql -d template_postgis -c "GRANT ALL ON geometry_columns TO PUBLIC;"
+$ psql -d template_postgis -c "GRANT ALL ON geography_columns TO PUBLIC;"
+$ psql -d template_postgis -c "GRANT ALL ON spatial_ref_sys TO PUBLIC;"
+
+# Garbage-collect and freeze.
+$ psql -d template_postgis -c "VACUUM FULL;"
+$ psql -d template_postgis -c "VACUUM FREEZE;"
+
+# Allows non-superusers the ability to create from this template.
+$ psql -d postgres -c "UPDATE pg_database SET datistemplate='true' WHERE datname='template_postgis';"
+$ psql -d postgres -c "UPDATE pg_database SET datallowconn='false' WHERE datname='template_postgis';"
+
+Quit out of psql (^D or \q)
+
+Create a test database using the new template_postgis template…
+$ createdb test_gis_db -T template_postgis
+and drop it again.
+$ dropdb test_gis_db
+
