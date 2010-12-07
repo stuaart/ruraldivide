@@ -11,6 +11,6 @@
 <body>
 	<h2>Message</h2>
 	<div>Message reads: "${text}"</div>
-	<div><a href="/a/main">Return to admin page</a></div>
+	<div><a href="/rdserver/a/main">Return to admin page</a></div>
 </body>
 </html>
