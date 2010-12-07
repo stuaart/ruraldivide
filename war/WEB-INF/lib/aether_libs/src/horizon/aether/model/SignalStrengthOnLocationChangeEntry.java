@@ -6,7 +6,10 @@ import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.PrimaryKey;
+import javax.jdo.annotations.PersistenceModifier;
+import javax.jdo.annotations.Extension;
 
+import org.postgis.Point;
 
 /**
  * Class that represents a Signal Strength Entry.
@@ -36,6 +39,11 @@ public class SignalStrengthOnLocationChangeEntry {
 
     @Persistent
     private String networkType;
+
+	// Support for PostGIS geometries
+	@Persistent(persistenceModifier=PersistenceModifier.PERSISTENT)
+	@Extension(vendorName="datanucleus", key="spatial-srid", value="4269")
+	private Point point;
 
     
     /**
@@ -96,11 +104,18 @@ public class SignalStrengthOnLocationChangeEntry {
      * @param location
      * @param strength
      */
-    public SignalStrengthOnLocationChangeEntry(long timestamp, Location location, int signalStrength, String networkType) {
+    public SignalStrengthOnLocationChangeEntry(long timestamp, 
+											   Location location, 
+											   int signalStrength, 
+											   String networkType) 
+		throws java.sql.SQLException
+	{
         this.timestamp = timestamp;
         this.location = location;        
         this.signalStrength = signalStrength;
         this.networkType = networkType;
+		this.point = new Point("SRID=4269;POINT(" + location.getLongitude() + 
+							   " " + location.getLatitude() + "");
     }
     
     /**
@@ -109,11 +124,17 @@ public class SignalStrengthOnLocationChangeEntry {
      * @param location
      * @param blob
      */
-    public SignalStrengthOnLocationChangeEntry(long timestamp, Location location, SignalStrengthOnLocationChangeBlob blob) {
+    public SignalStrengthOnLocationChangeEntry(long timestamp, 
+											   Location location, 
+									SignalStrengthOnLocationChangeBlob blob) 
+		throws java.sql.SQLException
+	{
         this.timestamp = timestamp;
         this.location = location;
         this.networkType = blob.getNetworkType();
         this.signalStrength = blob.getSignalStrength();
+		this.point = new Point("SRID=4269;POINT(" + location.getLongitude() + 
+							   " " + location.getLatitude() + "");
     }
     
     /**

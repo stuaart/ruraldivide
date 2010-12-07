@@ -6,6 +6,10 @@ import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.PrimaryKey;
+import javax.jdo.annotations.PersistenceModifier;
+import javax.jdo.annotations.Extension;
+
+import org.postgis.Point;
 
 /**
  * Class that represents a Wi-Fi entry. A Wi-Fi entry 
@@ -25,6 +29,11 @@ public class WifiEntry {
     
     @Persistent(defaultFetchGroup = "true")
     private Location location;
+
+	// Support for PostGIS geometries
+	@Persistent(persistenceModifier=PersistenceModifier.PERSISTENT)
+	@Extension(vendorName="datanucleus", key="spatial-srid", value="4269")
+	private Point point;
 
     @Persistent
     ArrayList<Wifi> networks;
@@ -57,10 +66,15 @@ public class WifiEntry {
      * @param location
      * @param networks
      */
-    public WifiEntry(long timestamp, Location location, ArrayList<Wifi> networks) {
+    public WifiEntry(long timestamp, Location location, 
+					 ArrayList<Wifi> networks) 
+		throws java.sql.SQLException
+	{
         this.timestamp = timestamp;
         this.location = location;
         this.networks = networks;
+		this.point = new Point("SRID=4269;POINT(" + location.getLongitude() + 
+							   " " + location.getLatitude() + "");
     }
     
     /**
@@ -69,10 +83,14 @@ public class WifiEntry {
      * @param location
      * @param blob
      */
-    public WifiEntry(long timestamp, Location location, WifiBlob blob) {
+    public WifiEntry(long timestamp, Location location, WifiBlob blob) 
+		throws java.sql.SQLException
+	{
         this.timestamp = timestamp;
         this.location = location;
         this.networks = blob.getNetworks();
+		this.point = new Point("SRID=4269;POINT(" + location.getLongitude() + 
+							   " " + location.getLatitude() + "");
     }
     /**
      * Default constructor.

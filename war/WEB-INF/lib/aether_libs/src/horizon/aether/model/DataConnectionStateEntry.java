@@ -4,6 +4,10 @@ import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.PrimaryKey;
+import javax.jdo.annotations.PersistenceModifier;
+import javax.jdo.annotations.Extension;
+
+import org.postgis.Point;
 
 //import com.google.appengine.api.datastore.Key;
 
@@ -33,6 +37,12 @@ public class DataConnectionStateEntry {
 
     @Persistent
     private String state;
+
+	// Support for PostGIS geometries
+	@Persistent(persistenceModifier=PersistenceModifier.PERSISTENT)
+	@Extension(vendorName="datanucleus", key="spatial-srid", value="4269")
+	private Point point;
+
 
     /**
      * Gets the key.
@@ -70,10 +80,15 @@ public class DataConnectionStateEntry {
      * @param location
      * @param state
      */
-    public DataConnectionStateEntry(long timestamp, Location location, String state) { 
+    public DataConnectionStateEntry(long timestamp, Location location, 
+									String state) 
+		throws java.sql.SQLException
+	{ 
         this.timestamp = timestamp;
         this.location = location;
         this.state = state; 
+		this.point = new Point("SRID=4269;POINT(" + location.getLongitude() + 
+							   " " + location.getLatitude() + "");
     }
 
     /**
@@ -82,10 +97,15 @@ public class DataConnectionStateEntry {
      * @param location
      * @param blob
      */
-    public DataConnectionStateEntry(long timestamp, Location location, DataConnectionStateBlob blob) {
+    public DataConnectionStateEntry(long timestamp, Location location, 
+									DataConnectionStateBlob blob) 
+		throws java.sql.SQLException
+	{
         this.timestamp = timestamp;
         this.location = location;
         this.state = blob.getState();
+		this.point = new Point("SRID=4269;POINT(" + location.getLongitude() + 
+							   " " + location.getLatitude() + "");
     }
     
     /**

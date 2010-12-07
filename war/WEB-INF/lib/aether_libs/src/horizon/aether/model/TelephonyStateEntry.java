@@ -7,6 +7,10 @@ import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.PrimaryKey;
+import javax.jdo.annotations.PersistenceModifier;
+import javax.jdo.annotations.Extension;
+
+import org.postgis.Point;
 
 //import com.google.appengine.api.datastore.Key;
 
@@ -41,6 +45,11 @@ public class TelephonyStateEntry {
     
     @Persistent
     private String networkType;
+
+	// Support for PostGIS geometries
+	@Persistent(persistenceModifier=PersistenceModifier.PERSISTENT)
+	@Extension(vendorName="datanucleus", key="spatial-srid", value="4269")
+	private Point point;
 
     /**
      * Gets the key.
@@ -92,11 +101,16 @@ public class TelephonyStateEntry {
      * @param networkType
      */
     public TelephonyStateEntry(long timestamp, Location location, 
-                                ArrayList<NeighbouringCell> neighbouringCells, String networkType) {
+                                ArrayList<NeighbouringCell> neighbouringCells, 
+								String networkType) 
+		throws java.sql.SQLException
+	{
         this.timestamp = timestamp;
         this.location = location;
         this.neighbouringCells = neighbouringCells;
         this.networkType = networkType;
+		this.point = new Point("SRID=4269;POINT(" + location.getLongitude() + 
+							   " " + location.getLatitude() + "");
     }
     
     /**
@@ -105,11 +119,16 @@ public class TelephonyStateEntry {
      * @param location
      * @param blob
      */
-    public TelephonyStateEntry(long timestamp, Location location, TelephonyStateBlob blob) {
+    public TelephonyStateEntry(long timestamp, Location location, 
+							   TelephonyStateBlob blob) 
+		throws java.sql.SQLException
+	{
         this.timestamp = timestamp;
         this.location = location;
         this.neighbouringCells = blob.getNeighbouringCells();
         this.networkType = blob.getNetworkType();
+		this.point = new Point("SRID=4269;POINT(" + location.getLongitude() + 
+							   " " + location.getLatitude() + "");
     }
     
     /**

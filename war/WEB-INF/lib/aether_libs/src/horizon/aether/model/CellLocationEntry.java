@@ -4,6 +4,10 @@ import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.PrimaryKey;
+import javax.jdo.annotations.PersistenceModifier;
+import javax.jdo.annotations.Extension;
+
+import org.postgis.Point;
 
 //import com.google.appengine.api.datastore.Key;
 
@@ -30,6 +34,11 @@ public class CellLocationEntry {
 
     @Persistent
     private int lac;
+
+	// Support for PostGIS geometries
+	@Persistent(persistenceModifier=PersistenceModifier.PERSISTENT)
+	@Extension(vendorName="datanucleus", key="spatial-srid", value="4269")
+	private Point point;
 
     /**
      * Gets the key.
@@ -81,12 +90,15 @@ public class CellLocationEntry {
      * @param lac
      */
     public CellLocationEntry(long timestamp, Location location, int cid, 
-							 int lac) 
+							 int lac)
+		throws java.sql.SQLException 
 	{
         this.timestamp = timestamp;
         this.location = location;
         this.cid = cid;
         this.lac = lac;
+		this.point = new Point("SRID=4269;POINT(" + location.getLongitude() + 
+							   " " + location.getLatitude() + "");
     }
 
     /**
@@ -96,12 +108,16 @@ public class CellLocationEntry {
      * @param blob
      */
     public CellLocationEntry(long timestamp, Location location, 
-							 CellLocationBlob blob) 
+							 CellLocationBlob blob)
+		throws java.sql.SQLException
 	{
         this.timestamp = timestamp;
         this.location = location;
         this.cid = blob.getCid();
         this.lac = blob.getLac();
+		this.point = new Point("SRID=4269;POINT(" + location.getLongitude() + 
+							   " " + location.getLatitude() + "");
+
     }
     
     /**

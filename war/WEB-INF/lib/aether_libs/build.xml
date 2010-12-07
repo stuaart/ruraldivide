@@ -6,7 +6,6 @@
 	<property name="jar.name" value="aether_libs.jar" />
 	<property name="aetherjars.dir" value="../" />
 
-
 	<path id="classpath">
   		<fileset dir="${lib.dir}">
     		<include name="*.jar"/>
@@ -14,6 +13,15 @@
   		</fileset>
 	</path>
 	
+	<path id="classpath.enhance">
+		<path refid="classpath"/>
+		<pathelement path="${build.dir}" />
+    </path>
+
+	<taskdef name="nucleusenhancer"
+             classpathref="classpath.enhance"
+             classname="org.datanucleus.enhancer.tools.EnhancerTask" />
+
 	<target name="makedirs">
 		<mkdir dir="${build.dir}" />
 	</target>
@@ -28,20 +36,10 @@
 	</target>
 
 	<target name="enhance" depends="compile">
-<!--
-java -Dlog4j.configuration=file:log4j.properties -cp ../jars/asm-3.3.jar:../jars/datanucleus-enhancer-2.1.2.jar:../jars/datanucleus-core-2.2.0-m3.jar:../jars/log4j-1.2.16.jar:../jars/jdo2-api-2.3-eb.jar:bin/:../jars/postgresql-9.0-801.jdbc4.jar:../jars/postgis-2.0.0SVN.jar  org.datanucleus.enhancer.DataNucleusEnhancer bin/horizon/aether/model/*.class
--->
-		<path id="classpath.enhance">
-            <path refid="classpath"/>
-			<pathelement path="${build.dir}" />
-        </path>
-
-        <taskdef name="nucleusenhancer"
-                 classpathref="classpath.enhance"
-                 classname="org.datanucleus.enhancer.tools.EnhancerTask" />
-
-        <nucleusenhancer classpathref="classpath.enhance" dir="${build.dir}" 
-						 checkonly="true" filesuffixes="class" 
+ 
+        <nucleusenhancer classpathref="classpath.enhance" 
+						 dir="${basedir}/${build.dir}" 
+						 checkonly="false" filesuffixes="class" 
 						 failonerror="true" verbose="true">
 			<jvmarg line="-Dlog4j.configuration=log4j.properties" />
 		</nucleusenhancer>
@@ -55,17 +53,20 @@ java -Dlog4j.configuration=file:log4j.properties -cp ../jars/asm-3.3.jar:../jars
 		</jar>
 	</target>
 
-	<target name="clean">
+	<target name="clean" description="Clean compiled classes">
 		<delete includeemptydirs="true">
-    		<fileset dir="${build.dir}" includes="**/*" />
+    		<fileset dir="${build.dir}" includes="**/*">
+				<exclude name="log4j.properties" />
+			</fileset>
 		</delete>
 		<delete file="datanucleus.log"/>
 	</target>
-
+	
 	<target name="clean-dist">
 		<delete file="${aetherjars.dir}/${jar.name}"/>
 	</target>
 
-	<target name="clean-all" depends="clean,clean-dist" />
+	<target name="clean-all" description="Clean everything" 
+			depends="clean,clean-dist" />
 
 </project>

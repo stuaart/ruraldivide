@@ -5,6 +5,10 @@ import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.PrimaryKey;
+import javax.jdo.annotations.PersistenceModifier;
+import javax.jdo.annotations.Extension;
+
+import org.postgis.Point;
 
 //import com.google.appengine.api.datastore.Key;
 
@@ -53,6 +57,11 @@ public class ServiceStateEntry {
     @Persistent
     private String state;
     
+	// Support for PostGIS geometries
+	@Persistent(persistenceModifier=PersistenceModifier.PERSISTENT)
+	@Extension(vendorName="datanucleus", key="spatial-srid", value="4269")
+	private Point point;
+
     /**
      * Gets the key.
      * @return
@@ -143,7 +152,10 @@ public class ServiceStateEntry {
      */
     public ServiceStateEntry(long timestamp, Location location, 
                             String operatorAlphaLong, String operatorAlphaShort, 
-                            String operatorNumeric, boolean roaming, String state) {
+                            String operatorNumeric, boolean roaming, 
+							String state) 
+		throws java.sql.SQLException
+	{
         this.timestamp = timestamp;
         this.location = location;
         this.operatorAlphaLong = operatorAlphaLong;
@@ -151,6 +163,8 @@ public class ServiceStateEntry {
         this.operatorNumeric = operatorNumeric;
         this.roaming = roaming;
         this.state = state;
+		this.point = new Point("SRID=4269;POINT(" + location.getLongitude() + 
+							   " " + location.getLatitude() + "");
     }
     
     /**
@@ -160,7 +174,10 @@ public class ServiceStateEntry {
      * @param location
      * @param blob
      */
-    public ServiceStateEntry(long timestamp, Location location, ServiceStateBlob blob) {
+    public ServiceStateEntry(long timestamp, Location location, 
+							 ServiceStateBlob blob) 
+		throws java.sql.SQLException
+	{
         this.timestamp = timestamp;
         this.location = location;
         this.operatorAlphaLong = blob.getOperatorAlphaLong();
@@ -168,6 +185,8 @@ public class ServiceStateEntry {
         this.operatorNumeric = blob.getOperatorNumeric();
         this.roaming = blob.isRoaming();
         this.state = blob.getState();
+		this.point = new Point("SRID=4269;POINT(" + location.getLongitude() + 
+							   " " + location.getLatitude() + "");
     }
     
     /**

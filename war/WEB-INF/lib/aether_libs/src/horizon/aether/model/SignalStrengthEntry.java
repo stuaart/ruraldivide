@@ -4,6 +4,10 @@ import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.PrimaryKey;
+import javax.jdo.annotations.PersistenceModifier;
+import javax.jdo.annotations.Extension;
+
+import org.postgis.Point;
 
 //import com.google.appengine.api.datastore.Key;
 
@@ -27,6 +31,11 @@ public class SignalStrengthEntry {
 
     @Persistent
     private int strength;
+	
+	// Support for PostGIS geometries
+	@Persistent(persistenceModifier=PersistenceModifier.PERSISTENT)
+	@Extension(vendorName="datanucleus", key="spatial-srid", value="4269")
+	private Point point;
 
     /**
      * Gets the key.
@@ -64,10 +73,14 @@ public class SignalStrengthEntry {
      * @param location
      * @param strength
      */
-    public SignalStrengthEntry(long timestamp, Location location, int strength) {
+    public SignalStrengthEntry(long timestamp, Location location, int strength)
+		throws java.sql.SQLException
+	{
         this.timestamp = timestamp;
         this.location = location;        
         this.strength = strength;
+		this.point = new Point("SRID=4269;POINT(" + location.getLongitude() + 
+							   " " + location.getLatitude() + "");
     }
     
     /**
@@ -76,10 +89,15 @@ public class SignalStrengthEntry {
      * @param location
      * @param blob
      */
-    public SignalStrengthEntry(long timestamp, Location location, SignalStrengthBlob blob) {
+    public SignalStrengthEntry(long timestamp, Location location, 
+							   SignalStrengthBlob blob) 
+		throws java.sql.SQLException
+	{
         this.timestamp = timestamp;
         this.location = location;
         this.strength = blob.getStrength();
+		this.point = new Point("SRID=4269;POINT(" + location.getLongitude() + 
+							   " " + location.getLatitude() + "");
     }
     
     /**
