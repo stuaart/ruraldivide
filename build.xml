@@ -32,7 +32,13 @@
 		<mkdir dir="${classes.dir}" />
 	</target>
 
-	<target name="compile" depends="makedirs"
+	<target name="aether_libs">
+    	<subant target="jar">
+			<fileset dir="war/WEB-INF/lib/aether_libs" includes="build.xml" />
+		</subant>
+	</target>
+
+	<target name="compile" depends="makedirs,aether_libs"
 			description="Compile classes into web archive dir">
 		<javac destdir="${classes.dir}" debug="on" deprecation="on" 
 			   includeAntRuntime="no">
