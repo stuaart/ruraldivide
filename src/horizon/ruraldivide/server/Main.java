@@ -10,6 +10,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.StringReader;
 import java.io.PrintWriter;
@@ -17,7 +18,10 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.Properties;
 import java.util.List;
+import java.util.Iterator;
 import java.sql.SQLException;
+import java.net.URL;
+import java.net.MalformedURLException;
 
 import javax.jdo.PersistenceManagerFactory;
 import javax.jdo.Transaction;
@@ -32,6 +36,16 @@ import org.apache.commons.fileupload.FileItemStream;
 import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.ResponseHandler;
+import org.apache.http.util.EntityUtils;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.client.BasicResponseHandler;
+
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.DeserializationConfig;
 import org.codehaus.jackson.map.JsonMappingException;
@@ -45,6 +59,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.servlet.ModelAndView;
 
+import org.geoserver.rest.client.datatypes.*;
 
 import org.postgis.*;
 
@@ -55,6 +70,7 @@ public class Main
     private static final Logger log = 
 		Logger.getLogger(Main.class.getName());
 
+
     
 	@RequestMapping(value = "/main", method = RequestMethod.GET)
     public String mainPageGET() 
@@ -63,6 +79,79 @@ public class Main
 		return "main";
     }
 
+
+	@RequestMapping(value = "/createlayer", method = RequestMethod.POST)
+	public ModelAndView createLayerPOST(HttpServletRequest req)
+	{
+		log.info("createLayerPOST()");
+
+		DefaultHttpClient httpclient = new DefaultHttpClient();
+		httpclient.getCredentialsProvider().setCredentials(
+			new AuthScope(AuthScope.ANY),
+			new UsernamePasswordCredentials("admin", "r4nd0m")
+		);
+
+		HttpGet httpget = 
+			new HttpGet("http://localhost:8080/geoserver/rest/layers/Area_Mosaic_polyline.json");
+        
+		StringBuffer result = new StringBuffer();
+		try 
+		{
+			ResponseHandler<String> responseHandler = 
+				new BasicResponseHandler();
+        	String responseBody = httpclient.execute(httpget, responseHandler);
+			
+			httpclient.getConnectionManager().shutdown();
+
+			ObjectMapper mapper = new ObjectMapper();
+			mapper.configure(
+				DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, 
+				false
+			);
+			log.info("JSON="+responseBody);
+			try
+			{
+				Map<String,Object> entry = 
+					mapper.readValue(responseBody, Map.class);
+
+				log.info("layer="+entry.get("layer").toString());
+				Layer layer = 
+					mapper.readValue(entry.get("layer").toString(), 
+									 Layer.class);
+				log.info("Layer layer.toString="+layer.toString());
+
+/*
+				Layers layer = mapper.readValue(responseBody, Layers.class);
+				log.info("list size = " + layers.getLayer().size());
+				for (Iterator i = layers.getLayer().iterator(); i.hasNext(); )
+				{
+					Layer l = (Layer)i.next();
+					result.append(l.getName() + "; " + l.getHref() + "... ");
+				}
+*/
+				result.append(layer.getName() + "; " + layer.getHref() + 
+								"... ");
+			}
+	      	catch (JsonParseException e) { 
+        		log.error(e.toString(), e); 
+        	}
+        	catch (JsonMappingException e) {
+        	    log.error(e.toString(), e); 
+        	}
+
+		}
+		catch (IOException e) 
+		{
+			log.error(e.toString());
+		}
+
+        
+		return new ModelAndView("message", 
+								"text", 
+								"Test layer created via REST interface \""+
+								result.toString()+ "\"");
+
+	}
 
     @RequestMapping(value = "/upload", method = RequestMethod.GET)
 	@ResponseStatus(HttpStatus.CREATED)
@@ -355,6 +444,7 @@ public class Main
 			pm.makePersistent(new ServiceStateEntry(timestamp, location, blob));
 		}
 		else if (identifier.equals(SignalStrengthEntry.IDENTIFIER)) {
+		/*
 			SignalStrengthBlob blob = 
 				(SignalStrengthBlob)mapper.readValue(dataBlob, 
 													 SignalStrengthBlob.class);
@@ -365,6 +455,7 @@ public class Main
 					SignalStrengthOnLocationChangeEntry.IDENTIFIER)
 				) 
 		{
+			*/
 			SignalStrengthOnLocationChangeBlob blob = 
 				(SignalStrengthOnLocationChangeBlob)mapper.readValue(dataBlob, 
 					SignalStrengthOnLocationChangeBlob.class);

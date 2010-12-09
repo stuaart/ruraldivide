@@ -9,6 +9,14 @@
 </head>
 
 <body>
+	<h2>Test REST interface:</h2>
+	<div>
+		<form action="createlayer" method="POST">
+			<div><input type="submit" value="Create layer">
+			</div>
+		</form>
+	</div>
+
 	<h2>Upload log files:</h2>
 	<div>
 		<form action='upload/single' method='POST' enctype='multipart/form-data'>
