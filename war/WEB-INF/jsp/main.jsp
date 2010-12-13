@@ -47,5 +47,7 @@
 			<div><input type='submit' value='Clean'></div>
 		</form>
 	</div>
+	<h2>Geoserver</h2>
+	<div><a href="/geoserver">Access Geoserver</a></div>
 </body>
 </html>

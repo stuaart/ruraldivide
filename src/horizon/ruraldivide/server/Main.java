@@ -37,10 +37,12 @@ import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 
 import org.apache.http.HttpEntity;
+import org.apache.http.entity.StringEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.util.EntityUtils;
 import org.apache.http.impl.client.DefaultHttpClient;
@@ -60,6 +62,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.servlet.ModelAndView;
 
 import org.geoserver.rest.client.datatypes.*;
+import org.geoserver.rest.client.jsonholder.*;
 
 import org.postgis.*;
 
@@ -91,51 +94,65 @@ public class Main
 			new UsernamePasswordCredentials("admin", "r4nd0m")
 		);
 
-		HttpGet httpget = 
-			new HttpGet("http://localhost:8080/geoserver/rest/layers/Area_Mosaic_polyline.json");
+		HttpGet get = 
+			new HttpGet("http://localhost:8080/geoserver/rest/layers.json");
         
 		StringBuffer result = new StringBuffer();
 		try 
 		{
 			ResponseHandler<String> responseHandler = 
 				new BasicResponseHandler();
-        	String responseBody = httpclient.execute(httpget, responseHandler);
+        	String responseBody = httpclient.execute(get, responseHandler);
 			
-			httpclient.getConnectionManager().shutdown();
 
 			ObjectMapper mapper = new ObjectMapper();
 			mapper.configure(
 				DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, 
 				false
 			);
-			log.info("JSON="+responseBody);
+
 			try
 			{
-				Map<String,Object> entry = 
-					mapper.readValue(responseBody, Map.class);
+				boolean create = true;
+				String testName = "TestLayer";
 
-				log.info("layer="+entry.get("layer").toString());
-				Layer layer = 
-					mapper.readValue(entry.get("layer").toString(), 
-									 Layer.class);
-				log.info("Layer layer.toString="+layer.toString());
-
-/*
-				Layers layer = mapper.readValue(responseBody, Layers.class);
-				log.info("list size = " + layers.getLayer().size());
-				for (Iterator i = layers.getLayer().iterator(); i.hasNext(); )
+				LayersJSONHolder layers = 
+					mapper.readValue(responseBody, LayersJSONHolder.class);
+				result.append("Listing " + 
+					layers.getLayers().getLayer().size() + " layers:<br/>");
+				for (Iterator i = layers.getLayers().getLayer().iterator(); 
+					 i.hasNext(); )
 				{
 					Layer l = (Layer)i.next();
-					result.append(l.getName() + "; " + l.getHref() + "... ");
+					result.append("Name=" + l.getName() + "; href=" + 
+							l.getHref() + "; type=" + l.getType() + "<br/>");
+					if (l.getName().equalsIgnoreCase(testName))
+						create = false;
 				}
-*/
-				result.append(layer.getName() + "; " + layer.getHref() + 
-								"... ");
+
+				if (create)
+				{
+					Layer l = new Layer();
+					l.setEnabled(true);
+					l.setHref("http://test/");
+					l.setName(testName);
+					String lStr = mapper.writeValueAsString(new LayerJSONHolder(l));
+					log.info("Creating test layer from JSON string=" + lStr);
+					StringEntity se = new StringEntity(lStr);
+					se.setContentType("application/json");
+					HttpPut put = new HttpPut("http://localhost:8080/geoserver/rest/layers/" + testName + ".json");
+					put.setEntity(se);
+					
+				}
+
+
 			}
-	      	catch (JsonParseException e) { 
+	      	catch (JsonParseException e) 
+			{ 
         		log.error(e.toString(), e); 
         	}
-        	catch (JsonMappingException e) {
+        	catch (JsonMappingException e) 
+			{
         	    log.error(e.toString(), e); 
         	}
 
@@ -146,10 +163,12 @@ public class Main
 		}
 
         
+		httpclient.getConnectionManager().shutdown();
+
 		return new ModelAndView("message", 
 								"text", 
-								"Test layer created via REST interface \""+
-								result.toString()+ "\"");
+								"Test layer created via REST interface \n" +
+								result.toString());
 
 	}
 
@@ -360,10 +379,12 @@ public class Main
 			}
 			
         }
-        catch (JsonParseException e) { 
+        catch (JsonParseException e) 
+		{ 
             log.error(e.toString(), e); 
         }
-        catch (JsonMappingException e) {
+        catch (JsonMappingException e) 
+		{
             log.error(e.toString(), e); 
         }
         catch (IOException e) {
@@ -505,32 +526,25 @@ public class Main
 		tx.begin();
 		pm.newQuery(CellLocationEntry.class).deletePersistentAll();
 		tx.commit();
-		log.info(".");
 		tx.begin();
 		pm.newQuery(DataConnectionStateEntry.class).deletePersistentAll();
 		tx.commit();
-		log.info(".");
 		tx.begin();
 		pm.newQuery(ServiceStateEntry.class).deletePersistentAll();
 		tx.commit();
-		log.info(".");
 		tx.begin();
 		pm.newQuery(SignalStrengthEntry.class).deletePersistentAll();
 		tx.commit();
-		log.info(".");
 		tx.begin();
 		pm.newQuery(SignalStrengthOnLocationChangeEntry.class
 						).deletePersistentAll();
 		tx.commit();
-		log.info(".");
 		tx.begin();
 		pm.newQuery(SignalStrengthEntry.class).deletePersistentAll();
 		tx.commit();
-		log.info(".");
 		tx.begin();
 		pm.newQuery(TelephonyStateEntry.class).deletePersistentAll();
 		tx.commit();
-		log.info(".");
 		tx.begin();
 		pm.newQuery(Location.class).deletePersistentAll();
 		tx.commit();

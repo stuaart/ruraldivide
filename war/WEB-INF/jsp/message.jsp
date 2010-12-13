@@ -10,7 +10,8 @@
 
 <body>
 	<h2>Message</h2>
-	<div>Message reads: "${text}"</div>
+	<div>Message reads:</div>
+	<div>${text}</div>
 	<div><a href="/rdserver/a/main">Return to admin page</a></div>
 </body>
 </html>
